@@ -1,0 +1,28 @@
+#!/use/bin/env python3
+import subprocess
+
+import gi
+gi.require_version('Notify', '0.7')
+from gi.repository import Notify
+from gi.repository import GLib
+
+
+def get_volume():
+    for i in subprocess.getoutput("""pactl list sinks""").splitlines():
+        if "Volume" in i:
+            return int(i.split()[4][:-1])
+
+
+def set_volume(vol:int):
+    subprocess.run("pactl set-sink-volume 0 {}%".format(vol).split())
+
+
+def show_volume():
+    Notify.init("Volume")
+    notify = Notify.Notification.new("Brightness", f"{get_volume()}%", "dialog-information")
+
+    notify.set_hint("x-canonical-private-synchronous", GLib.Variant("s", "anything"))
+    notify.set_timeout(5000)
+    notify.show()
+
+# show_volume()
