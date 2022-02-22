@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 import argparse
 import subprocess
+from time import time
 
 import gi
 gi.require_version('Notify', '0.7')
 from gi.repository import Notify
 from gi.repository import GLib
 
-UPPER_LIMIT = 1.0
-LOWER_LIMIT = 0.1
+
+LOWER_LIMIT, UPPER_LIMIT = 0.1, 1.0
 
 
 def get_brightness() -> dict:
-    v = subprocess.getoutput(" ".join(["xrandr", "--verbose"])).splitlines()
+    v = subprocess.getoutput("xrandr --verbose").splitlines()
     m,b = [],[]
-    primary = ""
+    primary:str
     for i in v:
         if " connected" in i:
             m.append(i.split()[0])
@@ -45,28 +46,33 @@ def equalize_brightness():
     if len(set(v.values())) != 1:
         for m in v.keys():
             set_brightness(m, float(v[primary]))
+            return get_brightness()
+    else:
+        return data
 
 
 def set_brightness(display:str, value:float):
     subprocess.run(["xrandr", "--output", display, "--brightness", str(value)])
 
 
-# def set_relative_brightness(inc:float):
-#     b_data:dict = get_brightness()["brightness"]
-#     curr_b = float(next(iter(b_data.values())))
-#     next_b = curr_b + inc
-#     if next_b > UPPER_LIMIT:
-#         next_b = UPPER_LIMIT
-#     elif next_b < LOWER_LIMIT:
-#         next_b = LOWER_LIMIT
+def set_relative_brightness(inc:float, b_data:dict):
+    curr_b = float(next(iter(b_data.values())))
+    next_b = curr_b + inc
+
+    if next_b > UPPER_LIMIT:
+        next_b = UPPER_LIMIT
+    elif next_b < LOWER_LIMIT:
+        next_b = LOWER_LIMIT
     
-#     for i in 
+    if next_b != curr_b:
+        for i in b_data.keys():
+            set_brightness(i, next_b)
+    return round(next_b, 2)
 
     
-
-def show_brightness():
+def show_brightness(bright=float(next(iter(get_brightness()["brightness"].values())))):
     Notify.init("Volume")
-    notify = Notify.Notification.new("Brightness", next(iter(get_brightness()["brightness"].values())), "dialog-information")
+    notify = Notify.Notification.new("Brightness", f"{int(bright*100)}%", "dialog-information")
 
     notify.set_hint("x-canonical-private-synchronous", GLib.Variant("s", "anything"))
     notify.set_timeout(5000)
@@ -82,12 +88,23 @@ def show_brightness():
 
 #     notify_interface.Notify("", 0, "", "xbright", "Current Brightness: {}".format(bright), [], {"urgency": 1}, 1000)
 
-# parser = argparse.ArgumentParser(description='change brightness through software rendering. (xrandr)')
-# parser.add_argument(*("-i", "--increment"), type=float, required=False)
-# parser.add_argument(*("-d", "--decrement"), type=float, required=False)
+def main():
+    parser = argparse.ArgumentParser(description='change brightness through software rendering. (xrandr)')
+    change = parser.add_mutually_exclusive_group(required=True)
+    change.add_argument(*("-d", "--decrement"), metavar="DEC", type=float, required=False)
+    change.add_argument(*("-i", "--increment"), metavar='INC', type=float, required=False)
+    
+    args = dict(parser.parse_args()._get_kwargs())
+    inc:float
+    if args["increment"]:
+        inc = args["increment"]
+    else:
+        inc = -1*args["decrement"]
 
+    show_brightness(set_relative_brightness(inc, equalize_brightness()["brightness"]))
+# t = time()
 
-    # equalize_brightness()
-
-show_brightness()
-
+# show_brightness(set_relative_brightness(0.1, equalize_brightness()["brightness"]))
+# subprocess.getoutput(" ".join(["xrandr", "--verbose"])).splitlines()
+# print(time()-t)
+main()
