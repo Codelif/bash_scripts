@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
+import os
+import sys
 import subprocess
 from time import sleep
-
-import sys
-sys.argv[1]
 
 import gi
 gi.require_version('Notify', '0.7')
@@ -14,7 +13,13 @@ Notify.init("Virtual Machines")
 from i3ipc import Connection
 i3 = Connection()
 
+CONFIG_PATH = "/home/harsh/.config/startvm/last_ws" 
 
+
+def ensure_conff():
+    fpath = os.path.dirname(CONFIG_PATH)
+    if not os.path.exists(fpath):
+        os.mkdir(fpath)
 
 
 def get_primary() -> dict:
@@ -36,7 +41,6 @@ def get_free_workspace() -> int:
     busy_ws = [i.num for i in i3.get_workspaces()]
     displays = get_primary()
     ws = 100
-    # print(list(range(len(displays[0])+, 11)))
     for t_ws in range(len(displays[0])+1, 11):
         if t_ws not in busy_ws:
             ws = t_ws
@@ -45,9 +49,32 @@ def get_free_workspace() -> int:
     return ws, displays
         
 
-def startvm(vm) -> subprocess.CompletedProcess:
-    result = subprocess.run(["VBoxManage", "startvm", vm], capture_output=True, timeout=60, text=True)
-    return result
+def startvm(vm, ws, display):
+    i3.command('workspace %s' % ws)
+    i3.command('move workspace to %s' % display)
+
+    sleep(0.5)
+
+    vm_cmd = subprocess.run(["vboxmanage", "startvm", vm], capture_output=True, timeout=60, text=True)
+    
+    if vm_cmd.returncode != 0:
+        send_noti("ERROR: An Error has occured while trying to start VM '%s'. Please check the logs." % vm, 2)
+        print(vm_cmd.stdout)
+        i3.command('workspace previous')
+    else:
+        send_noti("SUCCESS: VM '%s' has been started." % vm, 1)
+
+
+def stopvm(vm, ws):
+    i3.command('workspace %s' % ws)
+    sleep(0.5)
+    vm_cmd = subprocess.run(["vboxmanage", "controlvm", vm, "savestate"], capture_output=True, timeout=60, text=True)
+    
+    if vm_cmd.returncode != 0:
+        send_noti("ERROR: An Error has occured while trying to stop VM '%s'. Please check the logs." % vm, 2)
+        i3.command('workspace previous')
+    else:
+        send_noti("SUCCESS: VM '%s' has been stopped (saved state)." % vm, 1)
 
 
 def send_noti(msg:str, urgency:int, timeout:int=10000):
@@ -57,20 +84,24 @@ def send_noti(msg:str, urgency:int, timeout:int=10000):
     notify.show()
 
 
+def check_running(vm):
+    if vm in subprocess.getoutput("vboxmanage list runningvms"):
+        return True
+    return False
+
+
 def main():
-    f_ws, displays = get_free_workspace()
-
-    i3.command('workspace {}'.format(f_ws))
-    i3.command('move workspace to {}'.format(displays[1]))
-
-    sleep(0.5)
-
-    vm = startvm(sys.argv[1])
-    if vm.returncode != 0:
-        send_noti("ERROR: An Error has occured while trying to start VM '%s'. Please check the logs." % sys.argv[1], 2)
-        i3.command('workspace previous')
+    vm = sys.argv[1]
+    
+    if not check_running(vm):
+        f_ws, displays = get_free_workspace()
+        startvm(vm, str(f_ws), displays[1])
+        with open(CONFIG_PATH, "w+") as cf:
+            cf.write(f_ws)
     else:
-        send_noti("SUCCESS: VM '%s' has been started.", 1)
+        with open(CONFIG_PATH) as cf:
+            last_ws = cf.read()
+        stopvm(vm, last_ws)
 
     
 
