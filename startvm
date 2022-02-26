@@ -97,7 +97,7 @@ def main():
         f_ws, displays = get_free_workspace()
         startvm(vm, str(f_ws), displays[1])
         with open(CONFIG_PATH, "w+") as cf:
-            cf.write(f_ws)
+            cf.write(str(f_ws))
     else:
         with open(CONFIG_PATH) as cf:
             last_ws = cf.read()
