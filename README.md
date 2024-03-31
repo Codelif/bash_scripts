@@ -1,9 +1,8 @@
 # Utility Scripts
-<p>My Personal Utility Shell/Python Scripts</p>\
+<p>My Personal Utility Shell/Python Scripts</p>
 
 
 ## Scripts
-\
 ### `i3-sway/startvm`
 Starts a VirtualBox VM in an empty i3/sway workspace.\
 Sends a desktop notification after the VM has booted up.\
@@ -18,22 +17,22 @@ No arguments\
 ### `xserver/dual-monitor-setup`
 xrandr configuration for my old dual monitor setup.\
 
-No arguments\
+No arguments
 #### Shell Script
 ### `xserver/xbright`
 Sets Xserver internal (software) brightness.\
-
-Takes increment or decrement in brightness as argument.\
+\
+Takes increment or decrement in brightness as argument.
 #### Python Script
 ### `pavol`
 Volume Utility with desktop notifications.\
-
-Takes in mute flag or change in volume as argument.\
+\
+Takes in mute flag or change in volume as argument.
 #### Python Script
 ### `battery`
 Battery info utility.\
 Shows battery charge, status, health.\
-
-Multiple arguments\
+\
+Multiple arguments
 #### Shell Script
 
