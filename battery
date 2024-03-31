@@ -53,6 +53,10 @@ parse_args(){
   done
 }
 
+send_noti(){
+  notify-send "$1" >/dev/null 2>&1
+}
+
 print_end (){
   if [ "$RAW_FLAG" != 1 ];then
     printf "%%\n"
@@ -92,6 +96,8 @@ case "$1" in
       printf "%% "
       status
       printf "\n"
+
+      send_noti "$percent% $STATUS"
     fi
     ;;
 esac
