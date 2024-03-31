@@ -1,0 +1,99 @@
+#!/bin/sh
+
+BAT=/sys/class/power_supply/BAT0
+
+ENERGY_NOW=$(cat "$BAT/energy_now")
+ENERGY_FULL=$(cat "$BAT/energy_full")
+ENERGY_FULL_DESIGN=$(cat "$BAT/energy_full_design")
+STATUS=$(cat "$BAT/status")
+
+HELP_TEXT="Usage: battery [OPTIONS] COMMAND [ARGS]...
+
+  Get Battery Status
+
+Options:
+  --help    Show this message and exit.
+  -r        Don't add '%' symbol.
+
+Commands:
+  relative  Get battery charge wrt current battery capacity (%) [default]
+  absolute  Get battery charge wrt original battery capacity (%)
+  status    Get battery charging status
+  health    Get current battery capacity (%)
+"
+
+
+
+rel_battery() {
+  percent=$(echo 2k "$ENERGY_NOW" 100 \* "$ENERGY_FULL" / n | dc)
+  printf "%s" "$percent"
+}
+
+status(){
+  printf "%s" "$STATUS"
+}
+
+abs_battery() {
+  percent=$(echo 2k "$ENERGY_NOW" 100 \* "$ENERGY_FULL_DESIGN" / n | dc)
+  printf "%s" "$percent"
+}
+
+get_health() {
+  battery_health=$(echo 2k "$ENERGY_FULL" 100 \* "$ENERGY_FULL_DESIGN" / n | dc)
+  printf "%s" "$battery_health"
+}
+
+parse_args(){
+  for var in "$@"
+  do
+    if [ "$var" = "-r" ];
+    then
+      RAW_FLAG=1
+    fi
+  done
+}
+
+print_end (){
+  if [ "$RAW_FLAG" != 1 ];then
+    printf "%%\n"
+  else
+    printf "\n"
+  fi
+}
+
+parse_args "$@"
+
+case "$1" in
+  "health")
+    get_health
+    print_end
+    ;;
+
+  "absolute")
+    abs_battery
+    print_end
+    ;;
+  "relative")
+    rel_battery
+    print_end
+    ;;
+  "status")
+    status
+    printf "\n"
+    ;;
+  "--help")
+    echo "$HELP_TEXT"
+    ;;
+  *)
+    if [ "$#" != 0 ]; then
+      echo "$HELP_TEXT"
+    else
+      rel_battery
+      printf "%% "
+      status
+      printf "\n"
+    fi
+    ;;
+esac
+
+
