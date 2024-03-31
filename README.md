@@ -9,8 +9,8 @@ Starts a VirtualBox VM in an empty i3/sway workspace.\
 Sends a desktop notification after the VM has booted up.\
 \
 Takes VM name as argument.
-#### Shell Script
 ### `i3-sway/setup-workspaces`
+#### Shell Script
 Sets up workspace for my old dual monitor setup.\
 \
 No arguments
