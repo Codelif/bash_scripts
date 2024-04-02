@@ -54,7 +54,7 @@ parse_args(){
 }
 
 send_noti(){
-  notify-send "$1" >/dev/null 2>&1
+  notify-send "$1" -h string:x-hyprnotify-font-size:20 >/dev/null 2>&1
 }
 
 print_end (){
